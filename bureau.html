@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Carburant Oillic – bureau.html – Version 0.5 – 2026-11-18 (lot 4 : refacturation mensuelle) ; 0.4 (lot 3 : cuves, fiches papier, achats, relevés, compteur) -->
+<!-- Carburant Oillic – bureau.html – Version 0.6 – 2026-11-18 (AdBlue) ; 0.5 (lot 4 : refacturation mensuelle) ; 0.4 (lot 3 : cuves, fiches papier, achats, relevés, compteur) -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -18,7 +18,7 @@
   --vert:#017F01; --sur-vert:#FFFFFF; --vert-pale:#D5EBD5;
   --barre:#0064AF; --sur-barre:#FFFFFF; --horizon:#017F01;
   --ambre:#F0A92B; --ambre-pale:#FCEFD6; --rouge:#A8231B; --rouge-pale:#F8DEDB; --trait:#C4CED8; --ligne:#E2E8EE;
-  --gazole:#C9A227; --gnr:#B0336B; --cadran:#132130; --chiffre:#F4F7FA;
+  --gazole:#C9A227; --gnr:#B0336B; --adblue:#2F7FC1; --cadran:#132130; --chiffre:#F4F7FA;
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){
@@ -26,7 +26,7 @@
     --fond:#0C141C; --surface:#15202A; --encre:#E4EBF1; --doux:#98A8B5;
     --vert:#5DC25D; --sur-vert:#06200A; --vert-pale:#17301A;
     --ambre:#F0A92B; --ambre-pale:#3A2E14; --rouge:#FF8F86; --rouge-pale:#3A1A18; --trait:#283746; --ligne:#1E2A35;
-    --gazole:#E0BC45; --gnr:#E06A9E; --cadran:#05090D;
+    --gazole:#E0BC45; --gnr:#E06A9E; --adblue:#5EA8E6; --cadran:#05090D;
     color-scheme:dark;
   }
 }
@@ -59,6 +59,7 @@ h2{font-size:18px;margin:28px 0 10px}
 .jauge{position:relative;height:170px;border:3px solid var(--encre);border-radius:12px 12px 8px 8px;overflow:hidden;background:var(--ligne)}
 .jauge .niveau{position:absolute;left:0;right:0;bottom:0;background:var(--gazole)}
 .jauge.gnr .niveau{background:var(--gnr)}
+.jauge.adblue .niveau{background:var(--adblue)}
 .jauge .seuil{position:absolute;left:0;right:0;border-top:2px dashed var(--encre);opacity:.75}
 .jauge .seuil.s2{border-top-style:solid;border-color:var(--rouge);opacity:1}
 .cuve h3{margin:0 0 2px;font-size:18px}
@@ -325,7 +326,7 @@ dialog textarea{width:100%;min-height:70px;border:2px solid var(--trait);border-
       if (s.seuilAuto) {
         dl += '<dt>Reste</dt><dd>environ ' + fr(s.joursRestants, s.joursRestants < 3 ? 1 : 0) + ' jours</dd>'
           + '<dt>Consommation</dt><dd>' + fr(s.consoJour, 1) + ' L/jour</dd>'
-          + '<dt>Alertes sous</dt><dd>' + fr(s.seuil1) + ' L puis ' + fr(s.seuil2) + ' L</dd>';
+          + '<dt>Alertes sous</dt><dd>' + fr(s.seuil1) + ' L puis ' + fr(s.seuil2) + ' L <span class="note">(' + s.joursAlerte1 + ' j / ' + s.joursAlerte2 + ' j)</span></dd>';
       } else {
         dl += '<dt>Consommation</dt><dd>' + (s.methode === 'jauge' ? 'inconnue : il faut deux relevés' : 'inconnue : aucun plein récent') + '</dd>'
           + (s.seuilSecours ? '<dt>Seuil de secours</dt><dd>' + fr(s.seuilSecours) + ' L</dd>' : '');
@@ -333,7 +334,7 @@ dialog textarea{width:100%;min-height:70px;border:2px solid var(--trait);border-
       dl += '<dt>Dernier relevé</dt><dd>' + (s.dernierReleve ? fr(s.dernierReleve.niveau) + ' L le ' + jour(s.dernierReleve.date) : 'aucun') + '</dd>';
       if (s.methode === 'compteur' && s.ecartReleve !== null) dl += '<dt>Écart jauge</dt><dd>' + fr(s.ecartReleve) + ' L</dd>';
       return '<article class="cuve' + (s.alerte ? ' a' + s.alerte : '') + '">'
-        + '<div class="jauge' + (s.carburant === 'GNR' ? ' gnr' : '') + '" role="img" aria-label="' + esc(s.nom) + ' : ' + (s.stock === null ? 'stock inconnu' : fr(s.stock) + ' litres sur ' + fr(cap)) + '">'
+        + '<div class="jauge' + (s.carburant === 'GNR' ? ' gnr' : s.carburant === 'AdBlue' ? ' adblue' : '') + '" role="img" aria-label="' + esc(s.nom) + ' : ' + (s.stock === null ? 'stock inconnu' : fr(s.stock) + ' litres sur ' + fr(cap)) + '">'
         + '<div class="niveau" style="height:' + niveau + '%"></div>' + lignes + '</div>'
         + '<div><h3>' + esc(s.nom) + etiq + '</h3>'
         + '<div class="stock">' + (s.stock === null ? '—' : fr(s.stock)) + ' <small>/ ' + fr(cap) + ' L' + (s.methode === 'jauge' ? ', estimé' : '') + '</small></div>'
@@ -397,20 +398,24 @@ dialog textarea{width:100%;min-height:70px;border:2px solid var(--trait);border-
       var conso = Object.keys(m.consommation).sort().map(function (s) { return esc(nomSoc(s)) + ' ' + frL(m.consommation[s]) + ' L (' + fr(100 * (m.prorata[s] || 0), 1) + ' %)'; }).join(', ');
       var h = '<article class="mois" data-mois="' + esc(m.mois) + '"><header><h2>' + esc(nomMois(m.mois)) + '</h2><div>' + etat
         + ' <button class="lien" type="button" data-imprimer="' + esc(m.mois) + '">Imprimer</button></div></header>'
-        + '<p class="conso">Cuve gazole : ' + (conso || 'aucun plein identifié') + (m.trous.litres ? ' ; ' + frL(m.trous.litres) + ' L non identifiés répartis au prorata' : '') + '.</p>';
+        + '<p class="conso">Cuve gazole : ' + (conso || 'aucun plein identifié') + (m.trous.litres ? ' ; ' + frL(m.trous.litres) + ' L non identifiés répartis au prorata' : '') + '.'
+        + (m.adblue ? '<br>AdBlue : ' + fr(m.adblue.litres) + ' L consommés (' + fr(m.adblue.montant, 2) + ' € HT) ; GNR estimé : ' + esc(nomSoc('ETA')) + ' ' + fr(m.adblue.gnr.ETA) + ' L, ' + esc(nomSoc('TP')) + ' ' + fr(m.adblue.gnr.TP) + ' L'
+          + (m.adblue.complet ? ' → répartition ' + fr(100 * m.adblue.part.ETA, 1) + ' % / ' + fr(100 * m.adblue.part.TP, 1) + ' %.' : '.') : '') + '</p>'
+        + (m.adblue && !m.adblue.complet && m.adblue.litres > 0 ? '<div class="ecart">AdBlue pas encore réparti : il manque un ' + esc(m.adblue.manque) + '.' + (m.enCours ? '' : ' La facturation de ce mois attend ce relevé.') + '</div>' : '');
       if (!m.dettes.length) h += '<p class="note" style="margin:0">Chaque société n\'a consommé que ce qu\'elle a payé : rien à refacturer.</p>';
       m.dettes.forEach(function (d, j) {
         var lignes = d.vehicules.map(function (v) { return '<tr><td>' + esc(v.vehicule) + '</td><td class="n">' + frL(v.litres) + ' L</td><td class="n">' + fr(v.litres ? v.montant / v.litres : 0, 3) + '</td><td class="n">' + fr(v.montant, 2) + ' €</td></tr>'; }).join('')
+          + (d.adblue && d.adblue.litres ? '<tr><td>AdBlue (part selon la consommation de GNR)</td><td class="n">' + frL(Math.round(d.adblue.litres * 100) / 100) + ' L</td><td class="n">' + fr(d.adblue.montant / d.adblue.litres, 3) + '</td><td class="n">' + fr(d.adblue.montant, 2) + ' €</td></tr>' : '')
           + (d.trous.litres ? '<tr><td>Part des litres non identifiés</td><td class="n">' + frL(d.trous.litres) + ' L</td><td class="n">' + fr(d.trous.montant / d.trous.litres, 3) + '</td><td class="n">' + fr(d.trous.montant, 2) + ' €</td></tr>' : '')
           + d.stations.map(function (x) { return '<tr><td>Station ' + jour(x.date) + (x.vehicule ? ' — ' + esc(x.vehicule) : '') + '</td><td class="n">' + frL(x.litres) + ' L</td><td class="n">' + fr(x.litres ? x.montant / x.litres : 0, 3) + '</td><td class="n">' + fr(x.montant, 2) + ' €</td></tr>'; }).join('');
         h += '<div class="dette"><div class="total"><b>' + esc(nomSoc(d.debiteur)) + ' doit à ' + esc(nomSoc(d.creancier)) + '</b><span class="montant">' + fr(d.montant, 2) + ' € HT</span></div>'
           + (lignes ? '<div class="tableau"><table><thead><tr><th>Détail</th><th>Litres</th><th>Prix HT/L</th><th>Montant HT</th></tr></thead><tbody>' + lignes
-            + '<tr><td><b>Total</b></td><td class="n"><b>' + frL(d.litres) + ' L</b></td><td></td><td class="n"><b>' + fr(d.montant, 2) + ' €</b></td></tr></tbody></table></div>' : '');
+            + '<tr><td><b>Total</b></td><td class="n"><b>' + frL(d.litres) + ' L' + (d.adblue && d.adblue.litres ? ' + AdBlue' : '') + '</b></td><td></td><td class="n"><b>' + fr(d.montant, 2) + ' €</b></td></tr></tbody></table></div>' : '');
         if (d.facture) {
           h += '<p style="margin:6px 0 0">Facturé ' + fr(d.facture.montant, 2) + ' € HT — pièce EBP <b>' + esc(d.facture.piece) + '</b>, le ' + jour(d.facture.le) + ' par ' + esc(d.facture.par)
             + ' <button class="lien" type="button" data-defacturer="' + i + '-' + j + '">Annuler le marquage</button></p>';
           if (Math.abs(d.ecart) >= 0.01) h += '<div class="ecart">Les chiffres ont changé depuis la facturation (fiche arrivée en retard, ligne annulée…) : écart de <b>' + fr(Math.abs(d.ecart), 2) + ' € HT</b>' + (d.ecart > 0 ? ' en plus' : ' en moins') + ' à régulariser.</div>';
-        } else if (!m.enCours && d.montant > 0) {
+        } else if (!m.enCours && d.montant > 0 && !(m.adblue && !m.adblue.complet && m.adblue.litres > 0)) {
           h += '<div class="facturer"><div class="champ"><label for="piece-' + i + '-' + j + '">N° de pièce EBP</label><input id="piece-' + i + '-' + j + '" maxlength="40"></div>'
             + '<button class="btn" type="button" data-facturer="' + i + '-' + j + '">Marquer facturé</button></div>';
         }
