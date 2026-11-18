@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<!-- Carburant Oillic – pompe.html – Version 0.3 – 2026-11-17 (lot 2 : plein de gazole et relevé de jauge par QR code) -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Carburant Oillic</title>
+<meta name="theme-color" content="#0064AF">
+<meta name="robots" content="noindex">
+<link rel="icon" href="https://etaoillic.github.io/eta-bons/icone-192.png">
+<link rel="apple-touch-icon" href="https://etaoillic.github.io/eta-bons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<script src="config.js"></script>
+<style>
+:root{
+  --fond:#E9EEF3; --surface:#FFFFFF; --encre:#132130; --doux:#53636F;
+  --vert:#017F01; --sur-vert:#FFFFFF; --vert-pale:#D5EBD5;
+  --barre:#0064AF; --sur-barre:#FFFFFF; --horizon:#017F01;
+  --ambre:#F0A92B; --ambre-pale:#FCEFD6; --rouge:#A8231B; --rouge-pale:#F8DEDB; --trait:#C4CED8;
+  --cadran:#132130; --chiffre:#F4F7FA;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --fond:#0C141C; --surface:#15202A; --encre:#E4EBF1; --doux:#98A8B5;
+    --vert:#5DC25D; --sur-vert:#06200A; --vert-pale:#17301A;
+    --ambre:#F0A92B; --ambre-pale:#3A2E14; --rouge:#FF8F86; --rouge-pale:#3A1A18; --trait:#283746;
+    --cadran:#05090D; --chiffre:#F4F7FA;
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--fond);color:var(--encre);
+  font:18px/1.45 'Atkinson Hyperlegible',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid var(--ambre);outline-offset:1px}
+
+.barre{position:sticky;top:0;z-index:5;background:var(--barre);color:var(--sur-barre);border-bottom:5px solid var(--horizon);
+  padding:calc(12px + env(safe-area-inset-top,0px)) 18px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.barre b{font-size:21px}
+.barre span{font-size:15px;opacity:.9}
+main{max-width:560px;margin:0 auto;padding:16px 16px calc(28px + env(safe-area-inset-bottom,0px))}
+h1{font-size:27px;line-height:1.2;margin:6px 0 4px}
+.sous{color:var(--doux);margin:0 0 18px;font-size:16px}
+
+.alerte{border-radius:10px;padding:10px 14px;margin:0 0 10px;font-size:16px;border-left:8px solid var(--ambre);background:var(--ambre-pale)}
+.alerte.n2{border-left-color:var(--rouge);background:var(--rouge-pale)}
+.alerte b{display:block;font-size:17px}
+
+label{display:block;font-weight:700;margin:18px 0 6px}
+label small{font-weight:400;color:var(--doux)}
+input[type=text],input[type=number],input[inputmode],select,textarea{width:100%;min-height:54px;border:2px solid var(--trait);border-radius:10px;
+  background:var(--surface);padding:10px 12px;font-size:19px}
+textarea{min-height:70px;font-size:17px}
+
+/* Compteurs : lus sur la pompe, saisis comme sur un cadran mécanique */
+.compteurs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+.compteurs label{margin:0 0 6px}
+input.cadran{width:100%;min-height:68px;border:0;border-radius:10px;background:var(--cadran);color:var(--chiffre);
+  font-size:30px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.06em;text-align:center;padding:8px 6px;
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.08),inset 0 -3px 0 rgba(0,0,0,.35)}
+input.cadran::placeholder{color:#5B6B78;letter-spacing:0}
+.aide{font-size:15px;color:var(--doux);margin:6px 0 0;min-height:1.4em}
+.resultat{margin:16px 0 0;padding:14px;border-radius:10px;background:var(--surface);border:2px solid var(--trait);
+  display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.resultat .litres{font-size:38px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
+.resultat.bon{border-color:var(--vert)}
+.resultat.faux{border-color:var(--rouge)}
+
+.principal{display:block;width:100%;min-height:60px;border:0;border-radius:10px;margin-top:22px;
+  background:var(--vert);color:var(--sur-vert);font-weight:700;font-size:20px;padding:12px 16px}
+.principal:disabled{opacity:.6}
+.secondaire{display:block;width:100%;min-height:52px;border:2px solid var(--vert);background:transparent;color:var(--vert);
+  border-radius:10px;padding:8px 14px;font-weight:700;margin-top:12px}
+.erreur{margin:16px 0 0;padding:12px 14px;border-radius:10px;background:var(--rouge-pale);color:var(--rouge);font-weight:700}
+.confirmer{margin:16px 0 0;padding:14px;border-radius:10px;background:var(--ambre-pale);border-left:8px solid var(--ambre)}
+.confirmer p{margin:0 0 4px}
+.fait{text-align:center;padding:26px 10px 6px}
+.fait .coche{width:74px;height:74px;border-radius:50%;background:var(--vert);color:var(--sur-vert);font-size:44px;line-height:74px;margin:0 auto 12px}
+.fait h1{margin-bottom:8px}
+.liens{margin-top:30px;border-top:1px solid var(--trait);padding-top:10px}
+.liens button{background:none;border:0;color:var(--vert);font-weight:700;padding:10px 0;min-height:44px;display:block}
+.maj{font-size:14px;color:var(--doux);margin:22px 0 0;text-align:center}
+.bloque{padding:30px 6px;text-align:center}
+</style>
+</head>
+<body>
+<header class="barre"><b>Carburant Oillic</b><span id="jour"></span></header>
+<main>
+  <div id="alertes"></div>
+
+  <section id="ecran-bloque" class="bloque" hidden>
+    <h1>QR code incomplet</h1>
+    <p id="txt-bloque">Scannez le QR code collé sur la pompe ou sur la cuve.</p>
+  </section>
+
+  <section id="ecran-plein" hidden>
+    <h1>Plein de gazole</h1>
+    <p class="sous">Cuve commune — notez chaque plein, même petit.</p>
+    <label for="p-personne">Votre prénom</label>
+    <input id="p-personne" type="text" autocomplete="given-name" autocapitalize="words" list="personnes" maxlength="40">
+    <label for="p-vehicule">Véhicule</label>
+    <select id="p-vehicule"><option value="">— Choisir —</option></select>
+    <div class="compteurs">
+      <div><label for="p-debut">Compteur début</label><input id="p-debut" class="cadran" inputmode="decimal" autocomplete="off" placeholder="début"></div>
+      <div><label for="p-fin">Compteur fin</label><input id="p-fin" class="cadran" inputmode="decimal" autocomplete="off" placeholder="fin"></div>
+    </div>
+    <p class="aide" id="p-aide"></p>
+    <div class="resultat" id="p-resultat"><span>Litres pris</span><span class="litres" id="p-litres">—</span></div>
+    <label for="p-remarque">Remarque <small>(facultatif)</small></label>
+    <textarea id="p-remarque" maxlength="200"></textarea>
+    <div class="erreur" id="p-erreur" hidden></div>
+    <div class="confirmer" id="p-confirmer" hidden><p id="p-confirmer-txt"></p>
+      <button class="secondaire" id="p-confirmer-oui" type="button">Enregistrer quand même</button></div>
+    <button class="principal" id="p-envoyer" type="button">Enregistrer le plein</button>
+  </section>
+
+  <section id="ecran-releve" hidden>
+    <h1>Relevé de jauge</h1>
+    <p class="sous" id="r-cuve"></p>
+    <label for="r-personne">Votre prénom</label>
+    <input id="r-personne" type="text" autocomplete="given-name" autocapitalize="words" list="personnes" maxlength="40">
+    <label for="r-niveau">Niveau lu sur la jauge <small>(litres)</small></label>
+    <input id="r-niveau" class="cadran" inputmode="decimal" autocomplete="off" placeholder="litres">
+    <p class="aide" id="r-aide"></p>
+    <label for="r-remarque">Remarque <small>(facultatif)</small></label>
+    <textarea id="r-remarque" maxlength="200"></textarea>
+    <div class="erreur" id="r-erreur" hidden></div>
+    <button class="principal" id="r-envoyer" type="button">Enregistrer le relevé</button>
+  </section>
+
+  <section id="ecran-fait" class="fait" hidden>
+    <div class="coche" aria-hidden="true">✓</div>
+    <h1 id="f-titre"></h1>
+    <p id="f-detail"></p>
+    <p id="f-ecart" class="aide"></p>
+    <button class="principal" id="f-encore" type="button"></button>
+  </section>
+
+  <nav class="liens" id="liens" hidden></nav>
+  <p class="maj" id="maj"></p>
+  <datalist id="personnes"></datalist>
+</main>
+<script>
+(function () {
+  var API = (window.CARBURANT && window.CARBURANT.api) || '';
+  var params = new URLSearchParams(location.search);
+  var CLE_CLE = 'carburant-cle', CLE_D = 'carburant-pompe-donnees', CLE_P = 'carburant-prenom', CLE_V = 'carburant-vehicule';
+  var CLE = params.get('k') || '';
+  try {
+    if (/^[0-9a-f]{32}$/.test(CLE)) localStorage.setItem(CLE_CLE, CLE);
+    else CLE = localStorage.getItem(CLE_CLE) || '';
+  } catch (e) {}
+  var CUVE = params.get('cuve') || '';
+  var D = null, envoi = false, ecran = '';
+
+  function $(id) { return document.getElementById(id); }
+  function nombre(v) { var s = String(v || '').replace(/\s/g, '').replace(',', '.'); return s === '' ? NaN : Number(s); }
+  function fr(x, d) { return Number(x).toLocaleString('fr-FR', { minimumFractionDigits: d || 0, maximumFractionDigits: d || 0 }); }
+  function idEnvoi() { return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2); }
+  function garder(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  function lire(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
+
+  /** Appel au moteur Apps Script : POST en texte simple (pas de requête préalable CORS). */
+  function appel(action, donnees) {
+    var corps = { action: action, cle: CLE };
+    for (var k in donnees) corps[k] = donnees[k];
+    var depart = Date.now();
+    return fetch(API, { method: 'POST', body: JSON.stringify(corps), credentials: 'omit', redirect: 'follow' })
+      .catch(function () { throw new Error('Pas de connexion au serveur. Vérifiez le réseau et réessayez.'); })
+      .then(function (r) {
+        if (!r.ok) throw new Error('Serveur indisponible (code ' + r.status + '). Réessayez dans un instant.');
+        return r.json().catch(function () { throw new Error('Réponse illisible du serveur.'); });
+      })
+      .then(function (j) {
+        if (j.duree && window.console) console.log('[Carburant] ' + action + ' : ' + (Date.now() - depart) + ' ms, serveur ' + j.duree.ms + ' ms');
+        if (!j.ok) throw new Error(j.erreur || 'Erreur inconnue.');
+        return j.resultat;
+      });
+  }
+
+  function montrer(nom) {
+    ecran = nom;
+    ['bloque', 'plein', 'releve', 'fait'].forEach(function (e) { $('ecran-' + e).hidden = e !== nom; });
+    window.scrollTo(0, 0);
+  }
+
+  function cuveDe(code) { return D && D.cuves.filter(function (c) { return c.code === code; })[0]; }
+  function estReleve() { return CUVE && D && CUVE !== D.cuveGazole; }
+
+  function afficherAlertes() {
+    var h = '';
+    (D && D.alertes || []).forEach(function (a) {
+      var j = a.joursRestants, n = j !== null && j !== undefined ? Math.round(j * (j < 3 ? 10 : 1)) / (j < 3 ? 10 : 1) : null;
+      var reste = n !== null ? 'environ ' + fr(n, n % 1 ? 1 : 0) + (n < 2 ? ' jour' : ' jours') + ' de consommation' : 'sous le seuil d\'alerte';
+      h += '<div class="alerte' + (a.alerte === 2 ? ' n2' : '') + '"><b>' + (a.alerte === 2 ? 'Stock très bas : ' : 'Stock bas : ') + echapper(a.nom) + '</b>'
+        + (a.stock !== null ? fr(a.stock) + ' L, ' : '') + reste + '. Prévenez le bureau.</div>';
+    });
+    $('alertes').innerHTML = h;
+  }
+  function echapper(s) { return String(s).replace(/[&<>"]/g, function (x) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[x]; }); }
+
+  function remplirListes() {
+    var sel = $('p-vehicule'), garde = sel.value || lire(CLE_V);
+    var groupes = { ETA: 'ETA Oillic', TP: 'Oillic TP' }, h = '<option value="">— Choisir —</option>';
+    ['TP', 'ETA'].forEach(function (s) {
+      var v = D.vehicules.filter(function (x) { return x.societe === s; });
+      if (!v.length) return;
+      h += '<optgroup label="' + groupes[s] + '">' + v.map(function (x) {
+        return '<option value="' + echapper(x.nom) + '">' + echapper(x.nom) + (x.chauffeur ? ' (' + echapper(x.chauffeur) + ')' : '') + '</option>';
+      }).join('') + '</optgroup>';
+    });
+    sel.innerHTML = h;
+    if (garde && D.vehicules.some(function (x) { return x.nom === garde; })) sel.value = garde;
+    $('personnes').innerHTML = D.personnes.map(function (p) { return '<option value="' + echapper(p) + '">'; }).join('');
+    ['p-personne', 'r-personne'].forEach(function (id) { if (!$(id).value) $(id).value = lire(CLE_P); });
+  }
+
+  function proposerDebut(forcer) {
+    if (!D || D.dernierCompteur === null || D.dernierCompteur === undefined) {
+      $('p-aide').textContent = 'Lisez le compteur de la pompe avant de vous servir.';
+      return;
+    }
+    if (forcer || $('p-debut').value === '') $('p-debut').value = String(D.dernierCompteur).replace('.', ',');
+    $('p-aide').textContent = 'Début proposé : dernier compteur noté. Corrigez-le s\'il ne correspond pas à la pompe.';
+    calculer();
+  }
+
+  function calculer() {
+    var a = nombre($('p-debut').value), b = nombre($('p-fin').value), r = $('p-resultat');
+    r.classList.remove('bon', 'faux');
+    if (isNaN(a) || isNaN(b)) { $('p-litres').textContent = '—'; return; }
+    var l = Math.round((b - a) * 100) / 100;
+    $('p-litres').textContent = l > 0 ? fr(l, l % 1 ? 2 : 0) + ' L' : '—';
+    r.classList.add(l > 0 ? 'bon' : 'faux');
+  }
+
+  function preparer() {
+    afficherAlertes();
+    if (!D) return;
+    remplirListes();
+    if (estReleve()) {
+      var c = cuveDe(CUVE);
+      if (!c) { $('txt-bloque').textContent = 'Cette cuve n\'existe plus. Demandez au bureau le nouveau QR code.'; montrer('bloque'); return; }
+      $('r-cuve').textContent = c.nom + (c.capacite ? ' — ' + fr(c.capacite) + ' L au plus' : '');
+      var s = (D.stocks || []).filter(function (x) { return x.code === c.code; })[0];
+      $('r-aide').textContent = s && s.stock !== null ? 'Estimation actuelle : environ ' + fr(s.stock) + ' L.' : '';
+      if (ecran !== 'fait') montrer('releve');
+    } else {
+      proposerDebut(false);
+      if (ecran !== 'fait') montrer('plein');
+    }
+    var autres = D.cuves.filter(function (c) { return estReleve() ? c.code !== CUVE : c.code !== D.cuveGazole; });
+    $('liens').innerHTML = autres.map(function (c) {
+      return '<button type="button" data-cuve="' + echapper(c.code) + '">' + (c.code === D.cuveGazole ? 'Noter un plein de gazole' : 'Relever la jauge : ' + echapper(c.nom)) + '</button>';
+    }).join('');
+    $('liens').hidden = !autres.length;
+  }
+
+  $('liens').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-cuve]');
+    if (!b) return;
+    CUVE = b.getAttribute('data-cuve') === D.cuveGazole ? '' : b.getAttribute('data-cuve');
+    var u = new URL(location.href);
+    if (CUVE) u.searchParams.set('cuve', CUVE); else u.searchParams.delete('cuve');
+    history.replaceState(null, '', u);
+    ecran = '';
+    preparer();
+  });
+
+  function charger() {
+    $('maj').textContent = D ? 'Mise à jour…' : 'Chargement…';
+    return appel('pompeCharger', {}).then(function (r) {
+      D = r;
+      garder(CLE_D, JSON.stringify({ cle: CLE, d: D }));
+      $('maj').textContent = '';
+      preparer();
+    }).catch(function (e) {
+      $('maj').textContent = '';
+      if (/QR code/.test(e.message)) { $('txt-bloque').textContent = e.message; montrer('bloque'); return; }
+      if (!D) { $('txt-bloque').textContent = e.message; montrer('bloque'); }
+      else $('maj').textContent = 'Données non mises à jour : ' + e.message;
+    });
+  }
+
+  // ---------------------------------------------------------------- Plein
+  var idPlein = null;
+  ['p-debut', 'p-fin'].forEach(function (id) { $(id).addEventListener('input', function () { calculer(); masquer('p'); }); });
+  ['p-personne', 'p-vehicule', 'p-remarque'].forEach(function (id) { $(id).addEventListener('input', function () { masquer('p'); }); });
+  function masquer(p) { $(p + '-erreur').hidden = true; if (p === 'p') { $('p-confirmer').hidden = true; idPlein = null; } }
+  function erreur(p, t) { $(p + '-erreur').textContent = t; $(p + '-erreur').hidden = false; $(p + '-erreur').scrollIntoView({ block: 'center' }); }
+
+  function envoyerPlein(confirme) {
+    if (envoi) return;
+    var plein = { personne: $('p-personne').value.trim(), vehicule: $('p-vehicule').value, debut: $('p-debut').value, fin: $('p-fin').value,
+      remarque: $('p-remarque').value.trim(), confirme: !!confirme };
+    if (plein.personne.length < 2) return erreur('p', 'Indiquez votre prénom.');
+    if (!plein.vehicule) return erreur('p', 'Choisissez le véhicule.');
+    var a = nombre(plein.debut), b = nombre(plein.fin);
+    if (isNaN(a) || isNaN(b)) return erreur('p', 'Notez le compteur de la pompe au début et à la fin.');
+    if (b <= a) return erreur('p', 'Le compteur de fin doit être plus grand que celui du début.');
+    if (!idPlein) idPlein = idEnvoi();
+    plein.idEnvoi = idPlein;
+    envoi = true;
+    $('p-envoyer').disabled = true; $('p-envoyer').textContent = 'Enregistrement…';
+    appel('pompePlein', { plein: plein }).then(function (r) {
+      if (r.aConfirmer) {
+        $('p-confirmer-txt').textContent = r.aConfirmer;
+        $('p-confirmer').hidden = false;
+        $('p-confirmer').scrollIntoView({ block: 'center' });
+        return;
+      }
+      garder(CLE_P, plein.personne); garder(CLE_V, plein.vehicule);
+      D = r.etat; garder(CLE_D, JSON.stringify({ cle: CLE, d: D }));
+      $('f-titre').textContent = 'Plein enregistré';
+      $('f-detail').textContent = fr(r.litres, r.litres % 1 ? 2 : 0) + ' L pour ' + r.vehicule + '. Merci.';
+      $('f-ecart').textContent = r.ecart ? 'Il manquait ' + fr(r.ecart) + ' L depuis le plein précédent : le bureau est prévenu.' : '';
+      $('f-encore').textContent = 'Noter un autre plein';
+      idPlein = null;
+      $('p-fin').value = ''; $('p-debut').value = ''; $('p-remarque').value = ''; calculer();
+      montrer('fait'); preparer();
+    }).catch(function (e) { erreur('p', e.message); })
+      .then(function () { envoi = false; $('p-envoyer').disabled = false; $('p-envoyer').textContent = 'Enregistrer le plein'; });
+  }
+  $('p-envoyer').addEventListener('click', function () { envoyerPlein(false); });
+  $('p-confirmer-oui').addEventListener('click', function () { $('p-confirmer').hidden = true; envoyerPlein(true); });
+
+  // ---------------------------------------------------------------- Relevé
+  var idReleve = null;
+  ['r-personne', 'r-niveau', 'r-remarque'].forEach(function (id) { $(id).addEventListener('input', function () { masquer('r'); idReleve = null; }); });
+  $('r-envoyer').addEventListener('click', function () {
+    if (envoi) return;
+    var x = { cuve: CUVE, personne: $('r-personne').value.trim(), niveau: $('r-niveau').value, remarque: $('r-remarque').value.trim() };
+    if (x.personne.length < 2) return erreur('r', 'Indiquez votre prénom.');
+    var n = nombre(x.niveau), c = cuveDe(CUVE);
+    if (isNaN(n) || n < 0) return erreur('r', 'Notez le niveau lu sur la jauge, en litres.');
+    if (c && c.capacite && n > c.capacite) return erreur('r', 'La cuve contient au plus ' + fr(c.capacite) + ' L : vérifiez la jauge.');
+    if (!idReleve) idReleve = idEnvoi();
+    x.idEnvoi = idReleve;
+    envoi = true;
+    $('r-envoyer').disabled = true; $('r-envoyer').textContent = 'Enregistrement…';
+    appel('pompeReleve', { releve: x }).then(function (r) {
+      garder(CLE_P, x.personne);
+      D = r.etat; garder(CLE_D, JSON.stringify({ cle: CLE, d: D }));
+      $('f-titre').textContent = 'Relevé enregistré';
+      $('f-detail').textContent = r.cuve + ' : ' + fr(r.niveau) + ' L. Merci.';
+      $('f-ecart').textContent = '';
+      $('f-encore').textContent = 'Retour';
+      idReleve = null; $('r-niveau').value = ''; $('r-remarque').value = '';
+      montrer('fait'); preparer();
+    }).catch(function (e) { erreur('r', e.message); })
+      .then(function () { envoi = false; $('r-envoyer').disabled = false; $('r-envoyer').textContent = 'Enregistrer le relevé'; });
+  });
+
+  $('f-encore').addEventListener('click', function () { ecran = ''; preparer(); });
+
+  // ---------------------------------------------------------------- Démarrage
+  $('jour').textContent = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  if (!API) { $('txt-bloque').textContent = 'Page pas encore reliée au serveur (config.js).'; montrer('bloque'); return; }
+  if (!/^[0-9a-f]{32}$/.test(CLE)) { montrer('bloque'); return; }
+  try {
+    var x = JSON.parse(lire(CLE_D) || 'null');
+    if (x && x.cle === CLE && x.d && x.d.vehicules) { D = x.d; preparer(); }
+  } catch (e) {}
+  charger();
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && !envoi && ecran !== 'fait') charger(); });
+})();
+</script>
+</body>
+</html>
