@@ -1,1 +1,1 @@
-window.CARBURANT = { api: 'https://script.google.com/macros/s/AKfycbzo_d_iHpFT4ZpjpqW5DMUF22UTssJ4AWYIiqBe8H34syMwLQEUWcDttk18hllCjd-k/exec' }; // Adresse du déploiement Apps Script (se termine par /exec)
+window.CARBURANT = { api: 'https://script.google.com/macros/s/AKfycbyc8xTXqYmxmuj87bbc59ZfolriEuQFA_Uq5vH_zxjYJByA6_PsorCIt7VUqCwwyxgeCw/exec' }; // Adresse du déploiement Apps Script (se termine par /exec)
