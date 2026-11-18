@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Carburant Oillic – bureau.html – Version 0.4 – 2026-11-18 (lot 3 : cuves, fiches papier, achats, relevés, compteur) -->
+<!-- Carburant Oillic – bureau.html – Version 0.5 – 2026-11-18 (lot 4 : refacturation mensuelle) ; 0.4 (lot 3 : cuves, fiches papier, achats, relevés, compteur) -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -105,6 +105,35 @@ dialog{border:0;border-radius:12px;padding:20px;max-width:440px;width:calc(100% 
 dialog::backdrop{background:rgba(0,0,0,.45)}
 dialog textarea{width:100%;min-height:70px;border:2px solid var(--trait);border-radius:8px;padding:8px;background:var(--surface)}
 .bloque{padding:40px 10px;text-align:center}
+
+/* Refacturation : un relevé mensuel par mois, imprimable */
+.mois{background:var(--surface);border:1px solid var(--trait);border-radius:10px;padding:16px 18px;margin:0 0 16px}
+.mois header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px}
+.mois h2{margin:0;font-size:20px;text-transform:capitalize}
+.mois .etat{font-size:14px;font-weight:700;border-radius:5px;padding:2px 8px}
+.etat.encours{background:var(--ligne);color:var(--doux)}
+.etat.afacturer{background:var(--ambre);color:#132130}
+.etat.facture{background:var(--vert-pale);color:var(--vert)}
+.mois .conso{color:var(--doux);margin:6px 0 10px;font-size:15px}
+.dette{border-top:1px solid var(--ligne);padding:12px 0 4px}
+.dette .total{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:baseline}
+.dette .total b{font-size:18px}
+.dette .montant{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}
+.dette table{margin:8px 0 6px;font-size:14px}
+.dette td,.dette th{padding:4px 8px}
+.facturer{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-top:6px}
+.facturer input{min-height:40px;border:2px solid var(--trait);border-radius:8px;background:var(--surface);padding:4px 10px;width:180px}
+.ecart{background:var(--ambre-pale);border-left:6px solid var(--ambre);border-radius:6px;padding:8px 12px;margin:8px 0 0;font-size:15px}
+@media print{
+  .barre,.maj,.facturer,.lien,.btn,.message{display:none!important}
+  body{background:#fff;color:#000}
+  main{padding:0}
+  body.imprime-mois section{display:none!important}
+  body.imprime-mois #o-refacturation{display:block!important}
+  body.imprime-mois .mois{display:none}
+  body.imprime-mois .mois.a-imprimer{display:block;border:0}
+  #o-refacturation > h1, #o-refacturation > .note{display:none}
+}
 .maj{color:var(--doux);font-size:14px;text-align:right;margin:0 0 8px}
 </style>
 </head>
@@ -117,6 +146,7 @@ dialog textarea{width:100%;min-height:70px;border:2px solid var(--trait);border-
     <button type="button" data-onglet="achats">Achats</button>
     <button type="button" data-onglet="releves">Relevés</button>
     <button type="button" data-onglet="compteur">Compteur<span class="pastille" id="nb-trous" hidden></span></button>
+    <button type="button" data-onglet="refacturation">Refacturation<span class="pastille" id="nb-afacturer" hidden></span></button>
   </nav>
 </header>
 <main>
@@ -193,6 +223,12 @@ dialog textarea{width:100%;min-height:70px;border:2px solid var(--trait);border-
     <div id="l-anomalies"></div>
   </section>
 
+  <section id="o-refacturation" hidden>
+    <h1>Refacturation entre les sociétés</h1>
+    <p class="note">Gazole de la cuve commune valorisé par lot de livraison (premier entré, premier sorti) ; litres non identifiés répartis au prorata de chaque société ; pleins à la station faits pour un véhicule de l'autre société. Une fois la facture faite dans EBP, marquez-la facturée : les chiffres sont alors figés.</p>
+    <div id="l-refact"></div>
+  </section>
+
   <datalist id="personnes"></datalist><datalist id="fournisseurs"></datalist>
   <dialog id="d-annuler">
     <form method="dialog" id="f-annuler">
@@ -239,7 +275,7 @@ dialog textarea{width:100%;min-height:70px;border:2px solid var(--trait);border-
   // ---------------------------------------------------------------- Navigation
   function montrer(o) {
     onglet = o;
-    ['cuves', 'fiches', 'achats', 'releves', 'compteur'].forEach(function (x) { $('o-' + x).hidden = x !== o; });
+    ['cuves', 'fiches', 'achats', 'releves', 'compteur', 'refacturation'].forEach(function (x) { $('o-' + x).hidden = x !== o; });
     Array.prototype.forEach.call(document.querySelectorAll('#onglets button'), function (b) {
       if (b.getAttribute('data-onglet') === o) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
     });
@@ -274,7 +310,7 @@ dialog textarea{width:100%;min-height:70px;border:2px solid var(--trait);border-
     ['pl-date', 'ac-date', 're-date'].forEach(function (id) { if (!$(id).value) $(id).value = D.aujourdhui; });
     ['pl-date', 'ac-date', 're-date'].forEach(function (id) { $(id).max = D.aujourdhui; });
 
-    afficherCuves(); afficherPleins(); afficherAchats(); afficherReleves(); afficherCompteur();
+    afficherCuves(); afficherPleins(); afficherAchats(); afficherReleves(); afficherCompteur(); afficherRefacturation();
   }
 
   function afficherCuves() {
@@ -348,6 +384,71 @@ dialog textarea{width:100%;min-height:70px;border:2px solid var(--trait);border-
     }).join('') || '<tr><td colspan="6" class="vide">Aucun trou : tous les litres sortis ont une fiche.</td></tr>';
     $('l-anomalies').innerHTML = D.anomalies.map(function (a) { return '<div class="anomalie"><b>' + esc(a.id) + '</b> : ' + esc(a.texte) + '</div>'; }).join('') || '<p class="note">Aucune anomalie.</p>';
   }
+
+  function nomMois(m) { var p = m.split('-'); return new Date(Number(p[0]), Number(p[1]) - 1, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }); }
+  function afficherRefacturation() {
+    var R = D.refacturation || [], aFacturer = 0;
+    $('l-refact').innerHTML = R.map(function (m, i) {
+      var reste = m.dettes.filter(function (d) { return !d.facture && d.montant > 0; }).length;
+      if (!m.enCours) aFacturer += reste;
+      var etat = m.enCours ? '<span class="etat encours">Mois en cours : provisoire</span>'
+        : reste ? '<span class="etat afacturer">À facturer</span>'
+        : m.dettes.length ? '<span class="etat facture">Facturé</span>' : '<span class="etat encours">Rien à refacturer</span>';
+      var conso = Object.keys(m.consommation).sort().map(function (s) { return esc(nomSoc(s)) + ' ' + frL(m.consommation[s]) + ' L (' + fr(100 * (m.prorata[s] || 0), 1) + ' %)'; }).join(', ');
+      var h = '<article class="mois" data-mois="' + esc(m.mois) + '"><header><h2>' + esc(nomMois(m.mois)) + '</h2><div>' + etat
+        + ' <button class="lien" type="button" data-imprimer="' + esc(m.mois) + '">Imprimer</button></div></header>'
+        + '<p class="conso">Cuve gazole : ' + (conso || 'aucun plein identifié') + (m.trous.litres ? ' ; ' + frL(m.trous.litres) + ' L non identifiés répartis au prorata' : '') + '.</p>';
+      if (!m.dettes.length) h += '<p class="note" style="margin:0">Chaque société n\'a consommé que ce qu\'elle a payé : rien à refacturer.</p>';
+      m.dettes.forEach(function (d, j) {
+        var lignes = d.vehicules.map(function (v) { return '<tr><td>' + esc(v.vehicule) + '</td><td class="n">' + frL(v.litres) + ' L</td><td class="n">' + fr(v.litres ? v.montant / v.litres : 0, 3) + '</td><td class="n">' + fr(v.montant, 2) + ' €</td></tr>'; }).join('')
+          + (d.trous.litres ? '<tr><td>Part des litres non identifiés</td><td class="n">' + frL(d.trous.litres) + ' L</td><td class="n">' + fr(d.trous.montant / d.trous.litres, 3) + '</td><td class="n">' + fr(d.trous.montant, 2) + ' €</td></tr>' : '')
+          + d.stations.map(function (x) { return '<tr><td>Station ' + jour(x.date) + (x.vehicule ? ' — ' + esc(x.vehicule) : '') + '</td><td class="n">' + frL(x.litres) + ' L</td><td class="n">' + fr(x.litres ? x.montant / x.litres : 0, 3) + '</td><td class="n">' + fr(x.montant, 2) + ' €</td></tr>'; }).join('');
+        h += '<div class="dette"><div class="total"><b>' + esc(nomSoc(d.debiteur)) + ' doit à ' + esc(nomSoc(d.creancier)) + '</b><span class="montant">' + fr(d.montant, 2) + ' € HT</span></div>'
+          + (lignes ? '<div class="tableau"><table><thead><tr><th>Détail</th><th>Litres</th><th>Prix HT/L</th><th>Montant HT</th></tr></thead><tbody>' + lignes
+            + '<tr><td><b>Total</b></td><td class="n"><b>' + frL(d.litres) + ' L</b></td><td></td><td class="n"><b>' + fr(d.montant, 2) + ' €</b></td></tr></tbody></table></div>' : '');
+        if (d.facture) {
+          h += '<p style="margin:6px 0 0">Facturé ' + fr(d.facture.montant, 2) + ' € HT — pièce EBP <b>' + esc(d.facture.piece) + '</b>, le ' + jour(d.facture.le) + ' par ' + esc(d.facture.par)
+            + ' <button class="lien" type="button" data-defacturer="' + i + '-' + j + '">Annuler le marquage</button></p>';
+          if (Math.abs(d.ecart) >= 0.01) h += '<div class="ecart">Les chiffres ont changé depuis la facturation (fiche arrivée en retard, ligne annulée…) : écart de <b>' + fr(Math.abs(d.ecart), 2) + ' € HT</b>' + (d.ecart > 0 ? ' en plus' : ' en moins') + ' à régulariser.</div>';
+        } else if (!m.enCours && d.montant > 0) {
+          h += '<div class="facturer"><div class="champ"><label for="piece-' + i + '-' + j + '">N° de pièce EBP</label><input id="piece-' + i + '-' + j + '" maxlength="40"></div>'
+            + '<button class="btn" type="button" data-facturer="' + i + '-' + j + '">Marquer facturé</button></div>';
+        }
+        h += '</div>';
+      });
+      if (m.dettes.length === 2) {
+        var a = m.dettes[0], b = m.dettes[1], net = Math.round((a.montant - b.montant) * 100) / 100;
+        var x = net >= 0 ? a : b;
+        h += '<p class="conso" style="margin:10px 0 0">Après compensation des deux sens : ' + esc(nomSoc(x.debiteur)) + ' doit ' + fr(Math.abs(net), 2) + ' € HT à ' + esc(nomSoc(x.creancier)) + '.</p>';
+      }
+      return h + '<div id="m-refact-' + i + '"></div></article>';
+    }).join('') || '<p class="note">Rien à calculer pour l\'instant : il faut des livraisons et des pleins.</p>';
+    $('nb-afacturer').textContent = aFacturer; $('nb-afacturer').hidden = !aFacturer;
+  }
+  $('l-refact').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-facturer],[data-defacturer],[data-imprimer]');
+    if (!b) return;
+    if (b.hasAttribute('data-imprimer')) {
+      var art = document.querySelector('.mois[data-mois="' + b.getAttribute('data-imprimer') + '"]');
+      Array.prototype.forEach.call(document.querySelectorAll('.mois'), function (x) { x.classList.toggle('a-imprimer', x === art); });
+      document.body.classList.add('imprime-mois'); window.print(); document.body.classList.remove('imprime-mois');
+      return;
+    }
+    var ij = (b.getAttribute('data-facturer') || b.getAttribute('data-defacturer')).split('-'), m = D.refacturation[ij[0]], d = m.dettes[ij[1]];
+    var o = { mois: m.mois, debiteur: d.debiteur, creancier: d.creancier };
+    if (b.hasAttribute('data-facturer')) {
+      o.piece = $('piece-' + ij[0] + '-' + ij[1]).value.trim();
+      if (!o.piece) return message('m-refact-' + ij[0], 'erreur', 'Indiquez le n° de pièce EBP de la facture.');
+      envoyer('fact-' + m.mois + d.debiteur, 'bureauFacturer', 'facturation', o, 'm-refact-' + ij[0], function (r) {
+        message('m-refact-' + ij[0], 'ok', 'Marqué facturé : ' + fr(r.montant, 2) + ' € HT.');
+      }, b);
+    } else {
+      var motif = window.prompt('Pourquoi annuler le marquage « facturé » (pièce ' + d.facture.piece + ') ?');
+      if (!motif) return;
+      o.motif = motif;
+      envoyer('defact-' + m.mois + d.debiteur, 'bureauDefacturer', 'facturation', o, 'm-refact-' + ij[0], function () {}, b);
+    }
+  });
 
   // ---------------------------------------------------------------- Envois
   function message(id, type, texte) { $(id).innerHTML = texte ? '<div class="message ' + type + '">' + texte + '</div>' : ''; }
@@ -467,7 +568,7 @@ dialog textarea{width:100%;min-height:70px;border:2px solid var(--trait);border-
   });
 
   // ---------------------------------------------------------------- Démarrage
-  function bloquer(t) { $('txt-bloque').textContent = t; $('bloque').hidden = false; ['cuves', 'fiches', 'achats', 'releves', 'compteur'].forEach(function (x) { $('o-' + x).hidden = true; }); $('onglets').hidden = true; }
+  function bloquer(t) { $('txt-bloque').textContent = t; $('bloque').hidden = false; ['cuves', 'fiches', 'achats', 'releves', 'compteur', 'refacturation'].forEach(function (x) { $('o-' + x).hidden = true; }); $('onglets').hidden = true; }
   function charger() {
     $('maj').textContent = 'Mise à jour…';
     return appel('bureauCharger', {}).then(function (r) { D = r; garder(); $('bloque').hidden = true; afficher(); if (!document.querySelector('#onglets [aria-current]')) montrer(onglet); $('maj').textContent = ''; })
@@ -476,7 +577,7 @@ dialog textarea{width:100%;min-height:70px;border:2px solid var(--trait);border-
   if (!API) return bloquer('Page pas encore reliée au serveur (config.js).');
   if (!/^[0-9a-f]{32}$/.test(JETON)) return bloquer('Ouvrez votre lien personnel du bureau (onglet « Utilisateurs bureau » de la feuille).');
   var h = location.hash.slice(1);
-  if (['cuves', 'fiches', 'achats', 'releves', 'compteur'].indexOf(h) >= 0) onglet = h;
+  if (['cuves', 'fiches', 'achats', 'releves', 'compteur', 'refacturation'].indexOf(h) >= 0) onglet = h;
   try { var x = JSON.parse(localStorage.getItem(CLE_D) || 'null'); if (x && x.jeton === JETON && x.d && x.d.stocks) { D = x.d; afficher(); montrer(onglet); } } catch (e) {}
   typeAchat();
   charger();
