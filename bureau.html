@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<!-- Carburant Oillic – bureau.html – Version 0.4 – 2026-11-18 (lot 3 : cuves, fiches papier, achats, relevés, compteur) -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Carburant Oillic – Bureau</title>
+<meta name="theme-color" content="#0064AF">
+<meta name="robots" content="noindex">
+<link rel="icon" href="https://etaoillic.github.io/eta-bons/icone-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<script src="config.js"></script>
+<style>
+:root{
+  --fond:#E9EEF3; --surface:#FFFFFF; --encre:#132130; --doux:#53636F;
+  --vert:#017F01; --sur-vert:#FFFFFF; --vert-pale:#D5EBD5;
+  --barre:#0064AF; --sur-barre:#FFFFFF; --horizon:#017F01;
+  --ambre:#F0A92B; --ambre-pale:#FCEFD6; --rouge:#A8231B; --rouge-pale:#F8DEDB; --trait:#C4CED8; --ligne:#E2E8EE;
+  --gazole:#C9A227; --gnr:#B0336B; --cadran:#132130; --chiffre:#F4F7FA;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --fond:#0C141C; --surface:#15202A; --encre:#E4EBF1; --doux:#98A8B5;
+    --vert:#5DC25D; --sur-vert:#06200A; --vert-pale:#17301A;
+    --ambre:#F0A92B; --ambre-pale:#3A2E14; --rouge:#FF8F86; --rouge-pale:#3A1A18; --trait:#283746; --ligne:#1E2A35;
+    --gazole:#E0BC45; --gnr:#E06A9E; --cadran:#05090D;
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--fond);color:var(--encre);font:16px/1.45 'Atkinson Hyperlegible',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid var(--ambre);outline-offset:1px}
+
+.barre{position:sticky;top:0;z-index:5;background:var(--barre);color:var(--sur-barre);border-bottom:5px solid var(--horizon);
+  padding:calc(10px + env(safe-area-inset-top,0px)) 20px 0}
+.barre .haut{display:flex;justify-content:space-between;align-items:baseline;gap:12px;max-width:1180px;margin:0 auto}
+.barre b{font-size:20px}
+.barre span{opacity:.9;font-size:15px}
+nav.onglets{display:flex;gap:4px;max-width:1180px;margin:8px auto 0;overflow-x:auto}
+nav.onglets button{background:transparent;border:0;color:var(--sur-barre);padding:8px 14px 10px;border-radius:8px 8px 0 0;font-weight:700;white-space:nowrap;opacity:.85}
+nav.onglets button[aria-current=page]{background:var(--fond);color:var(--encre);opacity:1}
+nav.onglets .pastille{display:inline-block;min-width:20px;padding:0 6px;margin-left:6px;border-radius:10px;background:var(--ambre);color:#132130;font-size:13px;text-align:center}
+main{max-width:1180px;margin:0 auto;padding:20px 20px calc(40px + env(safe-area-inset-bottom,0px))}
+h1{font-size:24px;margin:0 0 14px}
+h2{font-size:18px;margin:28px 0 10px}
+.note{color:var(--doux);font-size:15px;margin:-6px 0 14px}
+
+/* Cuves : la jauge est l'élément qui se lit d'un coup d'œil */
+.cuves{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.cuve{background:var(--surface);border:1px solid var(--trait);border-radius:10px;padding:16px;display:grid;grid-template-columns:74px 1fr;gap:16px}
+.cuve.a1{border-color:var(--ambre);box-shadow:inset 0 0 0 1px var(--ambre)}
+.cuve.a2{border-color:var(--rouge);box-shadow:inset 0 0 0 1px var(--rouge)}
+.jauge{position:relative;height:170px;border:3px solid var(--encre);border-radius:12px 12px 8px 8px;overflow:hidden;background:var(--ligne)}
+.jauge .niveau{position:absolute;left:0;right:0;bottom:0;background:var(--gazole)}
+.jauge.gnr .niveau{background:var(--gnr)}
+.jauge .seuil{position:absolute;left:0;right:0;border-top:2px dashed var(--encre);opacity:.75}
+.jauge .seuil.s2{border-top-style:solid;border-color:var(--rouge);opacity:1}
+.cuve h3{margin:0 0 2px;font-size:18px}
+.cuve .stock{font-size:30px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.15}
+.cuve .stock small{font-size:15px;font-weight:400;color:var(--doux)}
+.cuve dl{margin:8px 0 0;display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:14px}
+.cuve dt{color:var(--doux)}
+.cuve dd{margin:0;font-variant-numeric:tabular-nums}
+.etiquette{display:inline-block;border-radius:5px;padding:1px 7px;font-size:13px;font-weight:700;margin-left:6px;vertical-align:2px}
+.etiquette.a1{background:var(--ambre);color:#132130}
+.etiquette.a2{background:var(--rouge);color:#fff}
+
+/* Formulaires en ligne */
+.saisie{background:var(--surface);border:1px solid var(--trait);border-radius:10px;padding:14px 16px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+.champ{display:flex;flex-direction:column;gap:4px;min-width:0}
+.champ label{font-size:14px;font-weight:700}
+.champ input,.champ select{min-height:44px;border:2px solid var(--trait);border-radius:8px;background:var(--surface);padding:6px 10px}
+.champ.large{flex:1 1 220px}
+.champ.num input{width:130px;font-variant-numeric:tabular-nums}
+.champ.date input{width:160px}
+.compteur input{background:var(--cadran);color:var(--chiffre);border-color:var(--cadran);font-weight:700;letter-spacing:.04em;font-variant-numeric:tabular-nums}
+.litres{min-width:90px;font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;padding-bottom:6px}
+.btn{min-height:44px;border:0;border-radius:8px;background:var(--vert);color:var(--sur-vert);font-weight:700;padding:8px 18px}
+.btn:disabled{opacity:.6}
+.lien{background:none;border:0;color:var(--vert);font-weight:700;padding:4px 6px}
+.message{margin:10px 0 0;padding:10px 14px;border-radius:8px;font-weight:700}
+.message.erreur{background:var(--rouge-pale);color:var(--rouge)}
+.message.ok{background:var(--vert-pale);color:var(--vert)}
+.message.question{background:var(--ambre-pale);color:var(--encre);font-weight:400;border-left:6px solid var(--ambre)}
+.message.question .btn{margin:8px 8px 0 0}
+
+/* Tableaux */
+.tableau{overflow-x:auto;background:var(--surface);border:1px solid var(--trait);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th{text-align:left;font-size:13px;color:var(--doux);font-weight:700;padding:8px 10px;border-bottom:1px solid var(--trait);white-space:nowrap}
+td{padding:7px 10px;border-bottom:1px solid var(--ligne);vertical-align:top}
+td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.annule td{color:var(--doux);text-decoration:line-through}
+tr.annule td:last-child{text-decoration:none}
+tr.trou td{background:var(--ambre-pale);font-weight:700}
+.vide{color:var(--doux);padding:14px}
+.anomalie{background:var(--surface);border-left:6px solid var(--ambre);border-radius:6px;padding:8px 12px;margin:0 0 8px;font-size:15px}
+dialog{border:0;border-radius:12px;padding:20px;max-width:440px;width:calc(100% - 32px);background:var(--surface);color:var(--encre)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog textarea{width:100%;min-height:70px;border:2px solid var(--trait);border-radius:8px;padding:8px;background:var(--surface)}
+.bloque{padding:40px 10px;text-align:center}
+.maj{color:var(--doux);font-size:14px;text-align:right;margin:0 0 8px}
+</style>
+</head>
+<body>
+<header class="barre">
+  <div class="haut"><b>Carburant Oillic — bureau</b><span id="qui"></span></div>
+  <nav class="onglets" id="onglets" hidden>
+    <button type="button" data-onglet="cuves">Cuves</button>
+    <button type="button" data-onglet="fiches">Fiches papier</button>
+    <button type="button" data-onglet="achats">Achats</button>
+    <button type="button" data-onglet="releves">Relevés</button>
+    <button type="button" data-onglet="compteur">Compteur<span class="pastille" id="nb-trous" hidden></span></button>
+  </nav>
+</header>
+<main>
+  <p class="maj" id="maj"></p>
+  <section id="bloque" class="bloque" hidden><h1>Accès impossible</h1><p id="txt-bloque"></p></section>
+
+  <section id="o-cuves" hidden>
+    <h1>Cuves</h1>
+    <div class="cuves" id="liste-cuves"></div>
+    <div id="resume-anomalies"></div>
+  </section>
+
+  <section id="o-fiches" hidden>
+    <h1>Fiches papier de la pompe gazole</h1>
+    <p class="note">Saisie à la chaîne : Entrée enregistre la fiche ; la date et le début suivant sont repris.</p>
+    <form class="saisie" id="f-plein" autocomplete="off">
+      <div class="champ date"><label for="pl-date">Date</label><input id="pl-date" type="date" required></div>
+      <div class="champ large"><label for="pl-vehicule">Véhicule</label><select id="pl-vehicule" required></select></div>
+      <div class="champ"><label for="pl-personne">Personne</label><input id="pl-personne" list="personnes" maxlength="40"></div>
+      <div class="champ num compteur"><label for="pl-debut">Compteur début</label><input id="pl-debut" inputmode="decimal" required></div>
+      <div class="champ num compteur"><label for="pl-fin">Compteur fin</label><input id="pl-fin" inputmode="decimal" required></div>
+      <div class="litres" id="pl-litres" aria-live="polite">— L</div>
+      <div class="champ large"><label for="pl-remarque">Remarque</label><input id="pl-remarque" maxlength="200"></div>
+      <button class="btn" type="submit">Enregistrer la fiche</button>
+    </form>
+    <div id="m-plein"></div>
+    <h2>Pleins par compteur <span class="note" id="dernier-compteur"></span></h2>
+    <div class="tableau"><table><thead><tr><th>Compteur</th><th>Litres</th><th>Date</th><th>Véhicule</th><th>Personne</th><th>Origine</th><th>Remarque</th><th></th></tr></thead><tbody id="t-pleins"></tbody></table></div>
+  </section>
+
+  <section id="o-achats" hidden>
+    <h1>Achats et livraisons</h1>
+    <form class="saisie" id="f-achat" autocomplete="off">
+      <div class="champ date"><label for="ac-date">Date</label><input id="ac-date" type="date" required></div>
+      <div class="champ"><label for="ac-type">Type</label><select id="ac-type"><option>Livraison cuve</option><option>Plein station</option><option>Stock initial</option></select></div>
+      <div class="champ" id="ac-cuve-champ"><label for="ac-cuve">Cuve</label><select id="ac-cuve"></select></div>
+      <div class="champ" id="ac-vehicule-champ" hidden><label for="ac-vehicule">Véhicule <small>(facultatif)</small></label><select id="ac-vehicule"></select></div>
+      <div class="champ"><label for="ac-fournisseur">Fournisseur</label><input id="ac-fournisseur" list="fournisseurs" maxlength="60"></div>
+      <div class="champ num"><label for="ac-litres">Litres</label><input id="ac-litres" inputmode="decimal" required></div>
+      <div class="champ num"><label for="ac-montant">Montant HT (€)</label><input id="ac-montant" inputmode="decimal" required></div>
+      <div class="champ"><label for="ac-payeur">Payé par</label><select id="ac-payeur" required></select></div>
+      <div class="champ"><label for="ac-facture">N° facture</label><input id="ac-facture" maxlength="40"></div>
+      <div class="champ large"><label for="ac-remarque">Remarque</label><input id="ac-remarque" maxlength="200"></div>
+      <div class="litres" id="ac-prix"></div>
+      <button class="btn" type="submit">Enregistrer l'achat</button>
+    </form>
+    <div id="m-achat"></div>
+    <h2>Derniers achats</h2>
+    <div class="tableau"><table><thead><tr><th>Date</th><th>Type</th><th>Cuve / véhicule</th><th>Fournisseur</th><th>Litres</th><th>Montant HT</th><th>Prix HT/L</th><th>Prix TTC/L</th><th>Payé par</th><th>Facture</th><th></th></tr></thead><tbody id="t-achats"></tbody></table></div>
+  </section>
+
+  <section id="o-releves" hidden>
+    <h1>Relevés de jauge</h1>
+    <form class="saisie" id="f-releve" autocomplete="off">
+      <div class="champ date"><label for="re-date">Date</label><input id="re-date" type="date" required></div>
+      <div class="champ"><label for="re-heure">Heure</label><input id="re-heure" type="time"></div>
+      <div class="champ"><label for="re-cuve">Cuve</label><select id="re-cuve"></select></div>
+      <div class="champ num"><label for="re-niveau">Niveau (L)</label><input id="re-niveau" inputmode="decimal" required></div>
+      <div class="champ"><label for="re-par">Relevé par</label><input id="re-par" list="personnes" maxlength="40"></div>
+      <div class="champ large"><label for="re-remarque">Remarque</label><input id="re-remarque" maxlength="200"></div>
+      <button class="btn" type="submit">Enregistrer le relevé</button>
+    </form>
+    <div id="m-releve"></div>
+    <h2>Derniers relevés</h2>
+    <div class="tableau"><table><thead><tr><th>Date</th><th>Cuve</th><th>Niveau</th><th>Par</th><th>Origine</th><th>Remarque</th><th></th></tr></thead><tbody id="t-releves"></tbody></table></div>
+  </section>
+
+  <section id="o-compteur" hidden>
+    <h1>Compteur de la pompe gazole</h1>
+    <p class="note">Un trou est un écart entre la fin d'un plein et le début du suivant : des litres sortis sans fiche. Si vous savez quel véhicule les a pris, attribuez-les ; sinon ils sont répartis chaque mois au prorata entre les deux sociétés.</p>
+    <div class="tableau"><table><thead><tr><th>Entre les compteurs</th><th>Litres</th><th>Avant le plein</th><th>Date</th><th>Attribuer à</th><th></th></tr></thead><tbody id="t-trous"></tbody></table></div>
+    <div id="m-trou"></div>
+    <h2>Anomalies</h2>
+    <div id="l-anomalies"></div>
+  </section>
+
+  <datalist id="personnes"></datalist><datalist id="fournisseurs"></datalist>
+  <dialog id="d-annuler">
+    <form method="dialog" id="f-annuler">
+      <h2 style="margin-top:0">Annuler <span id="an-id"></span></h2>
+      <p class="note" style="margin:0 0 10px">La ligne reste dans la feuille, barrée, et ne compte plus. Le motif est noté dans « Corrections ».</p>
+      <label for="an-motif"><b>Motif</b></label>
+      <textarea id="an-motif" maxlength="200" required></textarea>
+      <div class="message erreur" id="an-erreur" hidden></div>
+      <div id="an-message"></div>
+      <p style="display:flex;gap:10px;justify-content:flex-end;margin:14px 0 0">
+        <button class="lien" value="non" type="submit" formnovalidate>Garder la ligne</button>
+        <button class="btn" type="button" id="an-ok">Annuler la ligne</button>
+      </p>
+    </form>
+  </dialog>
+</main>
+<script>
+(function () {
+  var API = (window.CARBURANT && window.CARBURANT.api) || '';
+  var CLE = 'carburant-bureau-jeton', CLE_D = 'carburant-bureau-donnees';
+  var JETON = new URLSearchParams(location.search).get('b') || '';
+  try { if (/^[0-9a-f]{32}$/.test(JETON)) localStorage.setItem(CLE, JETON); else JETON = localStorage.getItem(CLE) || ''; } catch (e) {}
+  var D = null, onglet = 'cuves', envois = {}, enCours = false;
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s === null || s === undefined ? '' : s).replace(/[&<>"]/g, function (x) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[x]; }); }
+  function nombre(v) { var s = String(v || '').replace(/\s/g, '').replace(',', '.'); return s === '' ? NaN : Number(s); }
+  function fr(x, d) { if (x === null || x === undefined || isNaN(x)) return '—'; return Number(x).toLocaleString('fr-FR', { minimumFractionDigits: d || 0, maximumFractionDigits: d || 0 }); }
+  function frL(x) { return fr(x, x % 1 ? 2 : 0); }
+  function jour(iso) { if (!iso) return '—'; var p = iso.slice(0, 10).split('-'); return p[2] + '/' + p[1] + '/' + p[0].slice(2); }
+  function heure(iso) { return iso && iso.length > 11 && iso.slice(11) !== '12:00' && iso.slice(11) !== '00:00' ? ' ' + iso.slice(11, 16) : ''; }
+  function idEnvoi() { return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2); }
+  function garder() { try { localStorage.setItem(CLE_D, JSON.stringify({ jeton: JETON, d: D })); } catch (e) {} }
+
+  function appel(action, donnees) {
+    var corps = { action: action, jetonBureau: JETON };
+    for (var k in donnees) corps[k] = donnees[k];
+    return fetch(API, { method: 'POST', body: JSON.stringify(corps), credentials: 'omit', redirect: 'follow' })
+      .catch(function () { throw new Error('Pas de connexion au serveur. Vérifiez le réseau et réessayez.'); })
+      .then(function (r) { if (!r.ok) throw new Error('Serveur indisponible (code ' + r.status + ').'); return r.json().catch(function () { throw new Error('Réponse illisible du serveur.'); }); })
+      .then(function (j) { if (!j.ok) throw new Error(j.erreur || 'Erreur inconnue.'); return j.resultat; });
+  }
+
+  // ---------------------------------------------------------------- Navigation
+  function montrer(o) {
+    onglet = o;
+    ['cuves', 'fiches', 'achats', 'releves', 'compteur'].forEach(function (x) { $('o-' + x).hidden = x !== o; });
+    Array.prototype.forEach.call(document.querySelectorAll('#onglets button'), function (b) {
+      if (b.getAttribute('data-onglet') === o) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+    });
+    if (location.hash !== '#' + o) history.replaceState(null, '', '#' + o);
+  }
+  $('onglets').addEventListener('click', function (e) { var b = e.target.closest('button[data-onglet]'); if (b) montrer(b.getAttribute('data-onglet')); });
+
+  function nomCuve(code) { var c = (D.cuves || []).filter(function (x) { return x.code === code; })[0]; return c ? c.nom : code; }
+  function nomSoc(code) { var s = (D.societes || []).filter(function (x) { return x.code === code; })[0]; return s ? s.nom : code; }
+  function boutonAnnuler(quoi, l) { return l.annule ? '<span class="note">annulé</span>' : '<button class="lien" type="button" data-annuler="' + quoi + '" data-id="' + esc(l.id) + '">Annuler</button>'; }
+
+  // ---------------------------------------------------------------- Affichage
+  function afficher() {
+    $('qui').textContent = D.utilisateur;
+    $('onglets').hidden = false;
+    // Listes
+    var opts = '<option value="">— Choisir —</option>';
+    ['TP', 'ETA'].forEach(function (s) {
+      var v = D.vehicules.filter(function (x) { return x.societe === s; });
+      if (v.length) opts += '<optgroup label="' + esc(nomSoc(s)) + '">' + v.map(function (x) { return '<option value="' + esc(x.nom) + '">' + esc(x.nom) + (x.carburant === 'GNR' ? ' (GNR)' : '') + '</option>'; }).join('') + '</optgroup>';
+    });
+    ['pl-vehicule', 'ac-vehicule'].forEach(function (id) { var g = $(id).value; $(id).innerHTML = opts; $(id).value = g; });
+    var gc = $('ac-cuve').value, gr = $('re-cuve').value;
+    $('ac-cuve').innerHTML = D.cuves.map(function (c) { return '<option value="' + esc(c.code) + '">' + esc(c.nom) + '</option>'; }).join('');
+    $('re-cuve').innerHTML = $('ac-cuve').innerHTML;
+    if (gc) $('ac-cuve').value = gc; if (gr) $('re-cuve').value = gr;
+    var gp = $('ac-payeur').value;
+    $('ac-payeur').innerHTML = '<option value="">—</option>' + D.societes.map(function (s) { return '<option value="' + esc(s.code) + '">' + esc(s.nom) + '</option>'; }).join('');
+    $('ac-payeur').value = gp;
+    $('personnes').innerHTML = D.personnes.map(function (p) { return '<option value="' + esc(p) + '">'; }).join('');
+    $('fournisseurs').innerHTML = D.fournisseurs.map(function (p) { return '<option value="' + esc(p) + '">'; }).join('');
+    ['pl-date', 'ac-date', 're-date'].forEach(function (id) { if (!$(id).value) $(id).value = D.aujourdhui; });
+    ['pl-date', 'ac-date', 're-date'].forEach(function (id) { $(id).max = D.aujourdhui; });
+
+    afficherCuves(); afficherPleins(); afficherAchats(); afficherReleves(); afficherCompteur();
+  }
+
+  function afficherCuves() {
+    $('liste-cuves').innerHTML = D.stocks.map(function (s) {
+      var cap = s.capacite || 1, haut = function (l) { return Math.max(0, Math.min(100, 100 * l / cap)); };
+      var niveau = s.stock === null ? 0 : haut(s.stock);
+      var lignes = (s.seuil1 ? '<div class="seuil" style="bottom:' + haut(s.seuil1) + '%" title="Alerte 1"></div>' : '')
+        + (s.seuil2 ? '<div class="seuil s2" style="bottom:' + haut(s.seuil2) + '%" title="Alerte 2"></div>' : '')
+        + (!s.seuilAuto && s.seuilSecours ? '<div class="seuil" style="bottom:' + haut(s.seuilSecours) + '%" title="Seuil de secours"></div>' : '');
+      var etiq = s.alerte === 2 ? '<span class="etiquette a2">Alerte 2</span>' : s.alerte === 1 ? '<span class="etiquette a1">Alerte 1</span>' : '';
+      var dl = '';
+      if (s.seuilAuto) {
+        dl += '<dt>Reste</dt><dd>environ ' + fr(s.joursRestants, s.joursRestants < 3 ? 1 : 0) + ' jours</dd>'
+          + '<dt>Consommation</dt><dd>' + fr(s.consoJour, 1) + ' L/jour</dd>'
+          + '<dt>Alertes sous</dt><dd>' + fr(s.seuil1) + ' L puis ' + fr(s.seuil2) + ' L</dd>';
+      } else {
+        dl += '<dt>Consommation</dt><dd>' + (s.methode === 'jauge' ? 'inconnue : il faut deux relevés' : 'inconnue : aucun plein récent') + '</dd>'
+          + (s.seuilSecours ? '<dt>Seuil de secours</dt><dd>' + fr(s.seuilSecours) + ' L</dd>' : '');
+      }
+      dl += '<dt>Dernier relevé</dt><dd>' + (s.dernierReleve ? fr(s.dernierReleve.niveau) + ' L le ' + jour(s.dernierReleve.date) : 'aucun') + '</dd>';
+      if (s.methode === 'compteur' && s.ecartReleve !== null) dl += '<dt>Écart jauge</dt><dd>' + fr(s.ecartReleve) + ' L</dd>';
+      return '<article class="cuve' + (s.alerte ? ' a' + s.alerte : '') + '">'
+        + '<div class="jauge' + (s.carburant === 'GNR' ? ' gnr' : '') + '" role="img" aria-label="' + esc(s.nom) + ' : ' + (s.stock === null ? 'stock inconnu' : fr(s.stock) + ' litres sur ' + fr(cap)) + '">'
+        + '<div class="niveau" style="height:' + niveau + '%"></div>' + lignes + '</div>'
+        + '<div><h3>' + esc(s.nom) + etiq + '</h3>'
+        + '<div class="stock">' + (s.stock === null ? '—' : fr(s.stock)) + ' <small>/ ' + fr(cap) + ' L' + (s.methode === 'jauge' ? ', estimé' : '') + '</small></div>'
+        + '<dl>' + dl + '</dl></div></article>';
+    }).join('');
+    var n = D.anomalies.length, t = D.compteur.trous.length;
+    $('resume-anomalies').innerHTML = (n || t) ? '<h2>À vérifier</h2><p>' + (t ? t + ' trou(s) du compteur, ' : '') + n + ' anomalie(s). <button class="lien" type="button" data-aller="compteur">Voir</button></p>' : '';
+    $('nb-trous').textContent = t + n; $('nb-trous').hidden = !(t + n);
+  }
+  document.addEventListener('click', function (e) { var b = e.target.closest('[data-aller]'); if (b) montrer(b.getAttribute('data-aller')); });
+
+  function afficherPleins() {
+    $('dernier-compteur').textContent = D.compteur.dernier !== null ? '— dernier compteur : ' + fr(D.compteur.dernier, D.compteur.dernier % 1 ? 2 : 0) : '';
+    var trous = D.compteur.trous.slice(), lignes = [];
+    function ligneTrou(t) {
+      return '<tr class="trou"><td class="n">' + fr(t.debut) + ' → ' + fr(t.fin) + '</td><td class="n">' + frL(t.litres) + ' L</td><td colspan="5">Trou : litres sortis sans fiche</td><td><button class="lien" type="button" data-aller="compteur">Attribuer</button></td></tr>';
+    }
+    D.pleins.forEach(function (p) {
+      while (trous.length && trous[trous.length - 1].debut >= (p.fin || 0)) lignes.push(ligneTrou(trous.pop()));
+      lignes.push('<tr' + (p.annule ? ' class="annule"' : '') + '><td class="n">' + fr(p.debut, p.debut % 1 ? 2 : 0) + ' → ' + fr(p.fin, p.fin % 1 ? 2 : 0) + '</td><td class="n">' + frL(p.litres) + ' L</td><td>' + jour(p.date) + '</td><td>' + esc(p.vehicule)
+        + '</td><td>' + esc(p.personne) + '</td><td>' + esc(p.origine) + '</td><td>' + esc(p.remarque) + '</td><td>' + boutonAnnuler('plein', p) + '</td></tr>');
+    });
+    while (trous.length) lignes.push(ligneTrou(trous.pop()));
+    $('t-pleins').innerHTML = lignes.join('') || '<tr><td colspan="8" class="vide">Aucun plein pour l\'instant.</td></tr>';
+  }
+
+  function afficherAchats() {
+    var tva = 1 + D.tva / 100;
+    $('t-achats').innerHTML = D.achats.map(function (a) {
+      return '<tr' + (a.annule ? ' class="annule"' : '') + '><td>' + jour(a.date) + '</td><td>' + esc(a.type) + '</td><td>' + esc(a.cuve ? nomCuve(a.cuve) : (a.vehicule || '—')) + '</td><td>' + esc(a.fournisseur)
+        + '</td><td class="n">' + frL(a.litres) + '</td><td class="n">' + fr(a.montantHT, 2) + ' €</td><td class="n">' + fr(a.prix, 3) + '</td><td class="n">' + (a.prix !== null ? fr(a.prix * tva, 3) : '—')
+        + '</td><td>' + esc(a.payeur) + '</td><td>' + esc(a.facture) + '</td><td>' + boutonAnnuler('achat', a) + '</td></tr>';
+    }).join('') || '<tr><td colspan="11" class="vide">Aucun achat pour l\'instant.</td></tr>';
+  }
+
+  function afficherReleves() {
+    $('t-releves').innerHTML = D.releves.map(function (r) {
+      return '<tr' + (r.annule ? ' class="annule"' : '') + '><td>' + jour(r.date) + heure(r.date) + '</td><td>' + esc(nomCuve(r.cuve)) + '</td><td class="n">' + fr(r.niveau) + ' L</td><td>' + esc(r.par)
+        + '</td><td>' + esc(r.origine) + '</td><td>' + esc(r.remarque) + '</td><td>' + boutonAnnuler('releve', r) + '</td></tr>';
+    }).join('') || '<tr><td colspan="7" class="vide">Aucun relevé pour l\'instant.</td></tr>';
+  }
+
+  function afficherCompteur() {
+    var opts = $('pl-vehicule').innerHTML;
+    $('t-trous').innerHTML = D.compteur.trous.slice().reverse().map(function (t, i) {
+      return '<tr><td class="n">' + fr(t.debut) + ' → ' + fr(t.fin) + '</td><td class="n">' + frL(t.litres) + ' L</td><td>' + esc(t.apres) + '</td><td>' + jour(t.date)
+        + '</td><td><select data-trou-vehicule="' + i + '">' + opts + '</select></td><td><button class="btn" type="button" data-trou="' + i + '" data-debut="' + t.debut + '" data-fin="' + t.fin + '">Attribuer</button></td></tr>';
+    }).join('') || '<tr><td colspan="6" class="vide">Aucun trou : tous les litres sortis ont une fiche.</td></tr>';
+    $('l-anomalies').innerHTML = D.anomalies.map(function (a) { return '<div class="anomalie"><b>' + esc(a.id) + '</b> : ' + esc(a.texte) + '</div>'; }).join('') || '<p class="note">Aucune anomalie.</p>';
+  }
+
+  // ---------------------------------------------------------------- Envois
+  function message(id, type, texte) { $(id).innerHTML = texte ? '<div class="message ' + type + '">' + texte + '</div>' : ''; }
+  function envoyer(cle, action, nom, objet, zone, apres, bouton) {
+    if (enCours) return;
+    if (!envois[cle]) envois[cle] = idEnvoi();
+    objet.idEnvoi = envois[cle];
+    var don = {}; don[nom] = objet;
+    enCours = true; if (bouton) bouton.disabled = true;
+    message(zone, '', '');
+    return appel(action, don).then(function (r) {
+      if (r.aConfirmer) {
+        $(zone).innerHTML = '<div class="message question">' + esc(r.aConfirmer) + '<div><button class="btn" type="button" data-confirmer="1">Enregistrer quand même</button><button class="lien" type="button" data-corriger="1">Corriger</button></div></div>';
+        $(zone).querySelector('[data-confirmer]').onclick = function () { objet.confirme = true; envoyer(cle, action, nom, objet, zone, apres, bouton); };
+        $(zone).querySelector('[data-corriger]').onclick = function () { message(zone, '', ''); delete envois[cle]; };
+        return;
+      }
+      delete envois[cle];
+      D = r.etat; garder(); afficher();
+      apres(r);
+    }).catch(function (e) { message(zone, 'erreur', esc(e.message)); })
+      .then(function () { enCours = false; if (bouton) bouton.disabled = false; });
+  }
+  function changeEnvoi(cle, ids) { ids.forEach(function (id) { $(id).addEventListener('input', function () { delete envois[cle]; }); }); }
+
+  // Fiches papier
+  function litresFiche() {
+    var a = nombre($('pl-debut').value), b = nombre($('pl-fin').value);
+    $('pl-litres').textContent = isNaN(a) || isNaN(b) || b <= a ? '— L' : frL(Math.round((b - a) * 100) / 100) + ' L';
+  }
+  ['pl-debut', 'pl-fin'].forEach(function (id) { $(id).addEventListener('input', litresFiche); });
+  $('pl-debut').addEventListener('input', function () { this.dataset.touche = '1'; });
+  changeEnvoi('plein', ['pl-date', 'pl-vehicule', 'pl-personne', 'pl-debut', 'pl-fin', 'pl-remarque']);
+  $('f-plein').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var p = { date: $('pl-date').value, vehicule: $('pl-vehicule').value, personne: $('pl-personne').value.trim(), debut: $('pl-debut').value, fin: $('pl-fin').value, remarque: $('pl-remarque').value.trim(), origine: 'Fiche papier' };
+    if (!p.vehicule) return message('m-plein', 'erreur', 'Choisissez le véhicule.');
+    var a = nombre(p.debut), b = nombre(p.fin);
+    if (isNaN(a) || isNaN(b)) return message('m-plein', 'erreur', 'Indiquez les compteurs de début et de fin.');
+    if (b <= a) return message('m-plein', 'erreur', 'Le compteur de fin doit être plus grand que celui du début.');
+    envoyer('plein', 'bureauPlein', 'plein', p, 'm-plein', function (r) {
+      message('m-plein', 'ok', 'Fiche ' + esc(r.id) + ' enregistrée : ' + frL(r.litres) + ' L, ' + esc(p.vehicule) + '.');
+      $('pl-debut').value = p.fin; $('pl-fin').value = ''; $('pl-remarque').value = ''; $('pl-vehicule').value = ''; $('pl-personne').value = '';
+      litresFiche(); $('pl-vehicule').focus();
+    }, e.submitter);
+  });
+
+  // Achats
+  function typeAchat() {
+    var station = $('ac-type').value === 'Plein station';
+    $('ac-cuve-champ').hidden = station; $('ac-vehicule-champ').hidden = !station;
+  }
+  function prixAchat() {
+    var l = nombre($('ac-litres').value), m = nombre($('ac-montant').value);
+    $('ac-prix').textContent = l > 0 && m >= 0 ? fr(m / l, 3) + ' € HT/L' : '';
+  }
+  $('ac-type').addEventListener('change', typeAchat);
+  ['ac-litres', 'ac-montant'].forEach(function (id) { $(id).addEventListener('input', prixAchat); });
+  $('ac-cuve').addEventListener('change', function () {
+    var c = D.cuves.filter(function (x) { return x.code === $('ac-cuve').value; })[0];
+    if (c && c.societe !== 'Commune' && !$('ac-payeur').value) $('ac-payeur').value = c.societe;
+  });
+  changeEnvoi('achat', ['ac-date', 'ac-type', 'ac-cuve', 'ac-vehicule', 'ac-fournisseur', 'ac-litres', 'ac-montant', 'ac-payeur', 'ac-facture', 'ac-remarque']);
+  $('f-achat').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var station = $('ac-type').value === 'Plein station';
+    var a = { date: $('ac-date').value, type: $('ac-type').value, cuve: station ? '' : $('ac-cuve').value, vehicule: station ? $('ac-vehicule').value : '',
+      fournisseur: $('ac-fournisseur').value.trim(), litres: $('ac-litres').value, montantHT: $('ac-montant').value, payeur: $('ac-payeur').value,
+      facture: $('ac-facture').value.trim(), remarque: $('ac-remarque').value.trim() };
+    if (!(nombre(a.litres) > 0)) return message('m-achat', 'erreur', 'Indiquez les litres.');
+    if (isNaN(nombre(a.montantHT))) return message('m-achat', 'erreur', 'Indiquez le montant HT de la facture.');
+    if (!a.payeur) return message('m-achat', 'erreur', 'Indiquez la société qui a payé.');
+    envoyer('achat', 'bureauAchat', 'achat', a, 'm-achat', function (r) {
+      message('m-achat', 'ok', 'Achat ' + esc(r.id) + ' enregistré.');
+      ['ac-litres', 'ac-montant', 'ac-facture', 'ac-remarque'].forEach(function (id) { $(id).value = ''; }); prixAchat();
+    }, e.submitter);
+  });
+
+  // Relevés
+  changeEnvoi('releve', ['re-date', 're-heure', 're-cuve', 're-niveau', 're-par', 're-remarque']);
+  $('f-releve').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var x = { date: $('re-date').value, heure: $('re-heure').value, cuve: $('re-cuve').value, niveau: $('re-niveau').value, par: $('re-par').value.trim(), remarque: $('re-remarque').value.trim() };
+    if (isNaN(nombre(x.niveau))) return message('m-releve', 'erreur', 'Indiquez le niveau, en litres.');
+    envoyer('releve', 'bureauReleve', 'releve', x, 'm-releve', function (r) {
+      message('m-releve', 'ok', 'Relevé ' + esc(r.id) + ' enregistré.');
+      $('re-niveau').value = ''; $('re-remarque').value = '';
+    }, e.submitter);
+  });
+
+  // Trous
+  $('t-trous').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-trou]');
+    if (!b) return;
+    var v = document.querySelector('[data-trou-vehicule="' + b.getAttribute('data-trou') + '"]').value;
+    if (!v) return message('m-trou', 'erreur', 'Choisissez le véhicule qui a pris ces litres.');
+    envoyer('trou-' + b.getAttribute('data-debut'), 'bureauTrou', 'trou', { debut: b.getAttribute('data-debut'), fin: b.getAttribute('data-fin'), vehicule: v }, 'm-trou', function (r) {
+      message('m-trou', 'ok', frL(r.litres) + ' L attribués à ' + esc(v) + ' (' + esc(r.id) + ').');
+    }, b);
+  });
+
+  // Annulation
+  var aAnnuler = null;
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-annuler]');
+    if (!b) return;
+    aAnnuler = { quoi: b.getAttribute('data-annuler'), id: b.getAttribute('data-id') };
+    $('an-id').textContent = aAnnuler.id; $('an-motif').value = ''; $('an-erreur').hidden = true; message('an-message', '', '');
+    $('d-annuler').showModal(); $('an-motif').focus();
+  });
+  $('an-ok').addEventListener('click', function () {
+    var motif = $('an-motif').value.trim();
+    if (motif.length < 3) { $('an-erreur').textContent = 'Indiquez pourquoi la ligne est annulée.'; $('an-erreur').hidden = false; return; }
+    var o = { quoi: aAnnuler.quoi, id: aAnnuler.id, motif: motif };
+    $('an-erreur').hidden = true;
+    envoyer('annuler-' + o.id, 'bureauAnnuler', 'annulation', o, 'an-message', function () { message('an-message', '', ''); $('d-annuler').close(); }, $('an-ok'));
+  });
+
+  // ---------------------------------------------------------------- Démarrage
+  function bloquer(t) { $('txt-bloque').textContent = t; $('bloque').hidden = false; ['cuves', 'fiches', 'achats', 'releves', 'compteur'].forEach(function (x) { $('o-' + x).hidden = true; }); $('onglets').hidden = true; }
+  function charger() {
+    $('maj').textContent = 'Mise à jour…';
+    return appel('bureauCharger', {}).then(function (r) { D = r; garder(); $('bloque').hidden = true; afficher(); if (!document.querySelector('#onglets [aria-current]')) montrer(onglet); $('maj').textContent = ''; })
+      .catch(function (e) { $('maj').textContent = ''; if (!D || /Lien du bureau/.test(e.message)) bloquer(e.message); else $('maj').textContent = 'Données non mises à jour : ' + e.message; });
+  }
+  if (!API) return bloquer('Page pas encore reliée au serveur (config.js).');
+  if (!/^[0-9a-f]{32}$/.test(JETON)) return bloquer('Ouvrez votre lien personnel du bureau (onglet « Utilisateurs bureau » de la feuille).');
+  var h = location.hash.slice(1);
+  if (['cuves', 'fiches', 'achats', 'releves', 'compteur'].indexOf(h) >= 0) onglet = h;
+  try { var x = JSON.parse(localStorage.getItem(CLE_D) || 'null'); if (x && x.jeton === JETON && x.d && x.d.stocks) { D = x.d; afficher(); montrer(onglet); } } catch (e) {}
+  typeAchat();
+  charger();
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && !enCours) charger(); });
+})();
+</script>
+</body>
+</html>
